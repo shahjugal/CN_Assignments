@@ -34,3 +34,6 @@
 
 # Mac-FileSystem
 .DS_Storeß
+Resources/client
+Resources/server
+
