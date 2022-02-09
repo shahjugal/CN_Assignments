@@ -30,3 +30,7 @@
 *.exe
 *.out
 *.app
+
+
+# Mac-FileSystem
+.DS_Storeß
