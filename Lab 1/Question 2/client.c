@@ -6,6 +6,14 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h> 
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include<dirent.h>
 
 //  by defrault use localhost
 const char* Address = "localhost";
@@ -16,9 +24,22 @@ void error(const char *msg)
     exit(0);
 }
 
+void ReadFromSocketToBuffer(char buffer[], int* newsockfd){
+
+     bzero(buffer,256);
+     int n = read(*newsockfd,buffer,255);
+     if (n < 0) error("ERROR reading from socket");
+
+}
+
+void WriteToSocket(int* newsockfd, const void* message){
+     int n = write(*newsockfd,message,sizeof(message));
+     if (n < 0) error("ERROR writing to socket");
+}
+
 int main(int argc, char *argv[])
 {
-    int sockfd, portno, n;
+    int sockfd, portno, n, fd;
     struct sockaddr_in serv_addr;
     struct hostent *server;
 
@@ -44,17 +65,38 @@ int main(int argc, char *argv[])
     serv_addr.sin_port = htons(portno);
     if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) 
         error("ERROR connecting");
-    printf("Please enter your name: ");
+    
+    
     bzero(buffer,256);
-    fgets(buffer,255,stdin);
-    n = write(sockfd,buffer,strlen(buffer));
-    if (n < 0) 
-         error("ERROR writing to socket");
-    bzero(buffer,256);
-    n = read(sockfd,buffer,255);
-    if (n < 0) 
-         error("ERROR reading from socket");
+
+
+    ReadFromSocketToBuffer(buffer, &sockfd);
     printf("%s\n",buffer);
+
+    printf("You may enter the filename: ");
+
+    fgets(buffer,255,stdin);
+    WriteToSocket(&sockfd, buffer);
+
+    char buf[BUFSIZ] = { 0 };
+
+    fd = open(buffer, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
+
+    int num = read(sockfd, buf, BUFSIZ);
+
+    if (num == -1) {
+        perror("Read error");
+        exit(1);
+    }
+    else {
+        while (num != 0) {
+            if (write(fd, buf, num) == -1) {
+                perror("Error");
+            }
+            num = read(sockfd, buf, BUFSIZ);
+        }
+    }
+
     close(sockfd);
     return 0;
 }

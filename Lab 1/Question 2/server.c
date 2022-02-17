@@ -7,6 +7,14 @@
 #include <sys/types.h> 
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include<dirent.h>
 
 void error(const char *msg)
 {
@@ -14,9 +22,23 @@ void error(const char *msg)
     exit(1);
 }
 
+void ReadFromSocketToBuffer(char buffer[], int* newsockfd){
+
+     bzero(buffer,256);
+     int n = read(*newsockfd,buffer,255);
+     if (n < 0) error("ERROR reading from socket");
+
+}
+
+void WriteToSocket(int* newsockfd, const void* message){
+     int n = write(*newsockfd,message,sizeof(message));
+     if (n < 0) error("ERROR writing to socket");
+}
+
+
 int main(int argc, char *argv[])
 {
-     int sockfd, newsockfd, portno;
+     int sockfd, newsockfd, portno, fd;
      socklen_t clilen;
      char buffer[256];
      struct sockaddr_in serv_addr, cli_addr;
@@ -43,13 +65,33 @@ int main(int argc, char *argv[])
                  &clilen);
      if (newsockfd < 0) 
           error("ERROR on accept");
-     bzero(buffer,256);
-     n = read(newsockfd,buffer,255);
-     if (n < 0) error("ERROR reading from socket");
-     printf("Here is the message: %s\n",buffer);
-     n = write(newsockfd,"I got your message",18);
-     if (n < 0) error("ERROR writing to socket");
+
+    WriteToSocket(&newsockfd, "Hello!\n");
+
+    // Fetched File Name
+    ReadFromSocketToBuffer(buffer, &newsockfd);
+    //  printf("%s\n",buffer);
+
+    fd = open(buffer, O_RDONLY);
+    char buf[BUFSIZ];
+
+        int num = read(fd, buf, BUFSIZ);
+
+    if (num == -1) {
+        perror("Read error");
+        exit(1);
+    }
+    else {
+        while (num != 0) {
+            if (write(newsockfd, buf, num) == -1) {
+                perror("Error");
+            }
+            num = read(fd, buf, BUFSIZ);
+        }
+    }
+
      close(newsockfd);
      close(sockfd);
+     close(fd);
      return 0; 
 }
