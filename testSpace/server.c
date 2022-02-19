@@ -14,21 +14,28 @@ void error(const char *msg)
     exit(1);
 }
 
-struct TestPacket
-{
-    char message[256];
+enum PacketType{
+    ERROR,
+    DATA,
+    SIGNAL
 };
 
-void ReadFromSocketToBuffer(char buffer[], int* newsockfd){
+struct Packet
+{
+    enum PacketType type;
+    char message[BUFSIZ];
+};
 
-     bzero(buffer,256);
-     int n = read(*newsockfd,buffer,255);
+void ReadFromSocketToBuffer(struct Packet *buffer, int* newsockfd){
+
+     bzero(buffer,sizeof(*buffer));
+     int n = read(*newsockfd,buffer,sizeof(*buffer));
      if (n < 0) error("ERROR reading from socket");
 
 }
 
-void WriteToSocket(int* newsockfd, struct TestPacket *packet){
-     int n = write(*newsockfd,packet,sizeof(packet));
+void WriteToSocket(int* newsockfd, struct Packet *packet){
+     int n = write(*newsockfd,packet,sizeof(*packet));
      if (n < 0) error("ERROR writing to socket");
 }
 
@@ -63,8 +70,9 @@ int main(int argc, char *argv[])
           error("ERROR on accept");
 
 
-    struct TestPacket packet = {
-        .message = "Hello"
+    struct Packet packet = {
+        .type = ERROR,
+        .message = "404 Page Not Found!"
     };
 
     WriteToSocket(&newsockfd, &packet);

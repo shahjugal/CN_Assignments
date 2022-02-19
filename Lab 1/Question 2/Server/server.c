@@ -32,16 +32,28 @@ int checkIfFileExists(const char* filename){
         return 0;
 }
 
-void ReadFromSocketToBuffer(char buffer[], int* newsockfd){
+enum PacketType{
+    ERROR,
+    DATA,
+    SIGNAL
+};
 
-     bzero(buffer,256);
-     int n = read(*newsockfd,buffer,255);
+struct Packet
+{
+    enum PacketType type;
+    char message[BUFSIZ];
+};
+
+void ReadFromSocketToBuffer(struct Packet *buffer, int* newsockfd){
+
+     bzero(buffer,sizeof(*buffer));
+     int n = read(*newsockfd,buffer,sizeof(*buffer));
      if (n < 0) error("ERROR reading from socket");
 
 }
 
-void WriteToSocket(int* newsockfd, const void* message){
-     int n = write(*newsockfd,message,sizeof(message));
+void WriteToSocket(int* newsockfd, struct Packet *packet){
+     int n = write(*newsockfd,packet,sizeof(*packet));
      if (n < 0) error("ERROR writing to socket");
 }
 

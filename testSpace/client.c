@@ -13,20 +13,28 @@ void error(const char *msg)
     exit(0);
 }
 
-struct TestPacket
-{
-    char message[256];
+enum PacketType{
+    ERROR,
+    DATA,
+    SIGNAL
 };
 
-void ReadFromSocketToBuffer(struct TestPacket *buffer, int* newsockfd){
+struct Packet
+{
+    enum PacketType type;
+    char message[BUFSIZ];
+};
 
-     int n = read(*newsockfd,buffer,255);
+void ReadFromSocketToBuffer(struct Packet *buffer, int* newsockfd){
+
+     bzero(buffer,sizeof(*buffer));
+     int n = read(*newsockfd,buffer,sizeof(*buffer));
      if (n < 0) error("ERROR reading from socket");
 
 }
 
-void WriteToSocket(int* newsockfd, const void* message){
-     int n = write(*newsockfd,message,sizeof(message));
+void WriteToSocket(int* newsockfd, struct Packet *packet){
+     int n = write(*newsockfd,packet,sizeof(*packet));
      if (n < 0) error("ERROR writing to socket");
 }
 
@@ -60,13 +68,17 @@ int main(int argc, char *argv[])
     if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) 
         error("ERROR connecting");
 
-    struct TestPacket packet = {
-        .message = "Hello"
-    };
+    struct Packet packet;
 
     ReadFromSocketToBuffer(&packet, &sockfd);
 
-    printf("Message: %s", packet.message);
+    if (packet.type == DATA)
+        printf("Message: %s\n", packet.message);
+    else if (packet.type == ERROR)
+        printf("ERROR: %s\n", packet.message);
+    else if (packet.type == SIGNAL)
+        printf("SIGNAL: %s\n", packet.message);
+    
 
     close(sockfd);
     return 0;
