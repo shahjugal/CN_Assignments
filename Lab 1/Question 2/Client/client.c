@@ -81,7 +81,10 @@ int main(int argc, char *argv[])
 
     if (strcmp(filename, "EXIT") == 0)
     {
-        // TODO: Set Exit
+        WriteToSocket(&sockfd, "Q");
+        close(sockfd);
+        close(fd);
+        exit(0);
     }
     
     WriteToSocket(&sockfd, filename);
